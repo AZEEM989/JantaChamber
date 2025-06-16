@@ -1,4 +1,7 @@
 // Global variables
+// ...existing code...
+let lifetimeRevenue = parseFloat(localStorage.getItem('lifetimeRevenue') || '0');
+// ...existing code...
 let records = JSON.parse(localStorage.getItem('fruitChamberRecords') || '[]');
 let billCounter = parseInt(localStorage.getItem('billCounter') || '1');
 let deleteRecordId = null;
@@ -152,6 +155,12 @@ document.getElementById('billingForm').addEventListener('submit', function(e) {
     
     // Add to records
     records.push(record);
+    // Update lifetime revenue
+lifetimeRevenue += monthlyCost;
+localStorage.setItem('lifetimeRevenue', lifetimeRevenue.toString());
+
+localStorage.setItem('fruitChamberRecords', JSON.stringify(records));
+// ...existing code...
     localStorage.setItem('fruitChamberRecords', JSON.stringify(records));
     
     // Increment bill counter
@@ -300,11 +309,11 @@ function filterRecords() {
 // Update all statistics
 function updateAllStats() {
     const totalRecords = records.length;
-    const totalRevenue = records.reduce((sum, record) => sum + Number(record.monthlyCost || 0), 0);
+    // Use lifetimeRevenue instead of recalculating
+    const totalRevenue = lifetimeRevenue;
     const pendingAmount = records.reduce((sum, record) => sum + Number(record.balance || 0), 0);
     const overdueCount = records.filter(record => isOverdue(record.date)).length;
-    
-    // Update records section stats
+
     document.getElementById('totalRecords').textContent = totalRecords;
     document.getElementById('totalRevenue').textContent = `₹${totalRevenue.toFixed(2)}`;
     document.getElementById('pendingAmount').textContent = `₹${pendingAmount.toFixed(2)}`;
@@ -313,20 +322,21 @@ function updateAllStats() {
 
 // Update dashboard
 function updateDashboard() {
-    const totalBills = records.length;
-    const totalRevenue = records.reduce((sum, record) => sum + Number(record.monthlyCost || 0), 0);
+      const totalBills = records.length;
+    // Use lifetimeRevenue instead of recalculating
+    const totalRevenue = lifetimeRevenue;
     const pendingAmount = records.reduce((sum, record) => sum + Number(record.balance || 0), 0);
     const overdueCount = records.filter(record => isOverdue(record.date)).length;
-    
+
     document.getElementById('dashTotalBills').textContent = totalBills;
     document.getElementById('dashTotalRevenue').textContent = `₹${totalRevenue.toFixed(2)}`;
     document.getElementById('dashPendingAmount').textContent = `₹${pendingAmount.toFixed(2)}`;
     document.getElementById('dashOverdueCount').textContent = overdueCount;
-    
-    // Update fruit chart
+
     updateFruitChart();
     updateRecentActivity();
 }
+
 
 // Update fruit popularity chart
 function updateFruitChart() {
