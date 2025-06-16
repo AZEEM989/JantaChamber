@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Janta Fruit Chamber Billing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Password Protection Modal -->
+<div id="passwordModal" class="modal" style="display:block;">
+  <div class="modal-content" style="max-width:350px;">
+    <h3>Enter Password</h3>
+    <form id="passwordForm">
+      <input type="password" id="appPassword" placeholder="Password" required style="margin:1rem 0;width:100%;">
+      <div class="modal-actions">
+        <button type="submit" class="submit-btn">Unlock</button>
+      </div>
+      <div id="passwordError" class="error-message" style="display:none;margin-top:1rem;"></div>
+    </form>
+  </div>
+</div>
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <h1 class="nav-title">🍎 Janta Fruit Chamber</h1>
+      <div class="nav-buttons">
+        <button class="nav-btn active" onclick="showSection('billing')">New Billing</button>
+        
+<button class="nav-btn" onclick="showSection('boxout')">Box Out</button>
+        <button class="nav-btn" onclick="showSection('records')">All Records</button>
+        <button class="nav-btn" onclick="showSection('dashboard')">Dashboard</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Billing Section -->
+  <div id="billing-section" class="section active">
+    <div class="container">
+      <div class="form-header">
+        <h2>Janta Fruit Chamber Billing</h2>
+        <div class="bill-number">Bill No: <span id="billNumber"></span></div>
+      </div>
+      
+      <form id="billingForm">
+        <h3>Customer Details</h3>
+        <div class="personalinfo">
+          <div class="personalinfoname">
+            <label>Name *</label>
+            <input type="text" id="name" placeholder="Customer Name" required> 
+          </div>
+          
+          <div class="personalinfoname">
+            <label>Address</label>
+            <input type="text" id="address" placeholder="Address">
+          </div>
+          
+          <div class="personalinfoname">
+            <label>Mobile No *</label>
+            <input type="tel" id="mobile" placeholder="Mobile Number" required>
+          </div>
+        </div>
+        
+        <div class="personalinfo">
+          <div class="personalinfoname">
+            <label>Lot No.</label>
+            <input type="number" id="lotno" placeholder="Lot Number">
+          </div>
+
+          <div class="personalinfoname">
+            <label>Fruit Name *</label>
+            <select id="fruit" required>
+                <option value="">Select Fruit</option>
+                <option value="सेब">सेब (Apple)</option>
+                <option value="अनार">अनार (Pomegranate)</option>
+                <option value="स्ट्रॉबेरी">स्ट्रॉबेरी (Strawberry)</option>
+                <option value="खुबानी">खुबानी (Apricot)</option>
+                <option value="हरा-अंगूर">हरा-अंगूर (Green Grapes)</option>
+                <option value="काला-अंगूर">काला-अंगूर (Black Grapes)</option>
+                <option value="तरबूज">तरबूज (Watermelon)</option>
+                <option value="खरबूजा">खरबूजा (Muskmelon)</option>
+                <option value="आम">आम (Mango)</option>
+                <option value="संतरा">संतरा (Orange)</option>
+                <option value="केला">केला (Banana)</option>
+            </select>
+          </div>
+          
+          <div class="personalinfoname">
+            <label>Weight per Box (kg) *</label>
+            <input type="number" id="weight" placeholder="Box weight" step="0.1" required>
+          </div>
+        </div>
+
+        <div class="personalinfo">
+          <div class="personalinfoname">
+            <label>Quantity (Boxes) *</label>
+            <input type="number" id="quantity" oninput="calculateTotal()" placeholder="Number of Boxes" required>
+          </div>
+
+          <div class="personalinfoname">
+            <label>Total Weight (kg)</label>
+            <input type="text" id="totalWeight" readonly>
+          </div>
+
+          <div class="personalinfoname">
+            <label>Monthly Rate (₹4/kg)</label>
+            <input type="text" id="rateDisplay" value="₹4 per kg per month" readonly>
+          </div>
+        </div>
+
+        <div class="personalinfo">
+          <div class="personalinfoname">
+            <label>Monthly Cost (₹)</label>
+            <input type="text" id="total" readonly>
+          </div>
+          
+          <div class="personalinfoname">
+            <label>Amount Paid (₹)</label>
+            <input type="number" id="paid" oninput="calculateBalance()" step="0.01">
+          </div>
+
+          <div class="personalinfoname">
+            <label>Balance (Bakaya ₹)</label>
+            <input type="text" id="balance" readonly>
+          </div>
+        </div>
+
+        <div class="personalinfo">
+          <div class="personalinfoname full-width">
+            <label>Notes</label>
+            <textarea id="notes" placeholder="Additional notes or special instructions" rows="3"></textarea>
+          </div>
+        </div>
+        
+        <div class="form-actions">
+          <button type="submit" class="submit-btn">Submit Bill</button>
+          <button type="button" class="clear-btn" onclick="clearForm()">Clear Form</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Records Section -->
+  <div id="records-section" class="section">
+    <div class="container">
+      <div class="records-header">
+        <h2>All Billing Records</h2>
+        <div class="search-container">
+          <input type="text" id="searchInput" placeholder="Search by name, mobile, or bill number..." oninput="filterRecords()">
+          <button onclick="exportRecords()" class="export-btn">Export CSV</button>
+        </div>
+      </div>
+      
+      <div class="records-stats">
+        <div class="stat-card">
+          <h3 id="totalRecords">0</h3>
+          <p>Total Records</p>
+        </div>
+        <div class="stat-card">
+          <h3 id="totalRevenue">₹0</h3>
+          <p>Total Revenue</p>
+        </div>
+        <div class="stat-card">
+          <h3 id="pendingAmount">₹0</h3>
+          <p>Pending Amount</p>
+        </div>
+        <div class="stat-card">
+          <h3 id="overdueRecords">0</h3>
+          <p>Overdue (>1 Month)</p>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table id="recordsTable">
+          <thead>
+            <tr>
+              <th>Bill No</th>
+              <th>Date</th>
+              <th>Customer</th>
+              <th>Mobile</th>
+              <th>Fruit</th>
+              <th>Weight</th>
+              <th>Monthly Cost (₹)</th>
+              <th>Paid (₹)</th>
+              <th>Balance (₹)</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="recordsBody">
+          </tbody>
+        </table>
+        <div id="noRecords" class="no-records">
+          <p>No records found. Create your first bill!</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard Section -->
+  <div id="dashboard-section" class="section">
+    <div class="container">
+      <h2>Business Dashboard</h2>
+      
+      <div class="dashboard-stats">
+        <div class="dashboard-card">
+          <div class="card-icon">📊</div>
+          <div class="card-content">
+            <h3 id="dashTotalBills">0</h3>
+            <p>Total Bills</p>
+          </div>
+        </div>
+        <div class="dashboard-card">
+          <div class="card-icon">💰</div>
+          <div class="card-content">
+            <h3 id="dashTotalRevenue">₹0</h3>
+            <p>Total Revenue</p>
+          </div>
+        </div>
+        <div class="dashboard-card">
+          <div class="card-icon">⏳</div>
+          <div class="card-content">
+            <h3 id="dashPendingAmount">₹0</h3>
+            <p>Pending Payments</p>
+          </div>
+        </div>
+        <div class="dashboard-card">
+          <div class="card-icon">🚨</div>
+          <div class="card-content">
+            <h3 id="dashOverdueCount">0</h3>
+            <p>Overdue Records</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="dashboard-charts">
+        <div class="chart-container-1">
+          <h3>Popular Fruits</h3>
+          <div id="fruitChart" class="chart"></div>
+        </div>
+        <div class="chart-container">
+          <h3>Recent Activity</h3>
+          <div id="recentActivity" class="activity-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Add this section after the dashboard-section -->
+<div id="boxout-section" class="section">
+  <div class="container">
+    <div class="form-header">
+      <h2>Box Out Entry</h2>
+    </div>
+    <form id="boxOutForm">
+      <div class="personalinfo">
+        <div class="personalinfoname">
+          <label for="boxoutName">Name *</label>
+          <input type="text" id="boxoutName" required>
+        </div>
+        <div class="personalinfoname">
+          <label for="boxoutBillNo">Bill No *</label>
+          <select id="boxoutBillNo" required></select>
+        </div>
+        <div class="personalinfoname">
+          <label for="boxoutBoxes">Boxes Out *</label>
+          <input type="number" id="boxoutBoxes" min="1" required>
+        </div>
+        <div class="personalinfoname">
+          <label>Date & Time</label>
+          <input type="text" id="boxoutDateTime" readonly>
+        </div>
+        <div class="personalinfoname">
+          <label>Boxes Left</label>
+          <input type="text" id="boxoutLeft" readonly>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="submit-btn">Submit</button>
+        <button type="button" class="clear-btn" onclick="clearBoxOutForm()">Clear</button>
+      </div>
+    </form>
+    <h3 style="margin-top:2rem;">Box Out History</h3>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Bill No</th>
+            <th>Boxes Out</th>
+            <th>Date & Time</th>
+            <th>Boxes Left</th>
+          </tr>
+        </thead>
+        <tbody id="boxOutHistory"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+  <!-- Delete Confirmation Modal -->
+  <div id="deleteModal" class="modal">
+    <div class="modal-content">
+      <h3>Confirm Delete</h3>
+      <p>Are you sure you want to delete this record? This action cannot be undone.</p>
+      <div class="modal-actions">
+        <button onclick="confirmDelete()" class="delete-btn">Yes, Delete</button>
+        <button onclick="closeDeleteModal()" class="cancel-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+  <!-- Edit Record Modal -->
+<div id="editModal" class="modal">
+  <div class="modal-content">
+    <h3>Edit Payment</h3>
+    <form id="editForm">
+      <div style="margin-bottom:1rem;">
+        <label for="editPaid">Amount Paid (₹):</label>
+        <input type="number" id="editPaid" step="0.01" required>
+      </div>
+      <div style="margin-bottom:1rem;">
+        <label for="editNotes">Notes:</label>
+        <textarea id="editNotes" rows="3"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="submit" class="submit-btn">Save</button>
+        <button type="button" onclick="closeEditModal()" class="cancel-btn">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+  <!-- Bill Preview Modal -->
+  <div id="billModal" class="modal">
+    <div class="modal-content bill-preview">
+      <div class="bill-header">
+        <h2>🍎 Janta Fruit Chamber</h2>
+        <button onclick="closeBillModal()" class="close-btn">&times;</button>
+      </div>
+      <div id="billContent"></div>
+      <div class="modal-actions">
+        <button onclick="printBill()" class="print-btn">Print Bill</button>
+        <button onclick="closeBillModal()" class="cancel-btn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
