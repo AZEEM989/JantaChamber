@@ -340,57 +340,89 @@ function updateDashboard() {
 
 // Update fruit popularity chart
 function updateFruitChart() {
-    const fruitCount = {};
+    const fruitStats = {};
     records.forEach(record => {
-        fruitCount[record.fruit] = (fruitCount[record.fruit] || 0) + record.quantity;
+        if (!fruitStats[record.fruit]) {
+            fruitStats[record.fruit] = { total: 0, left: 0 };
+        }
+        fruitStats[record.fruit].total += record.quantity;
+        fruitStats[record.fruit].left += getBoxesLeft(record.billNumber);
     });
-    
-    const sortedFruits = Object.entries(fruitCount)
-        .sort(([,a], [,b]) => b - a)
+
+    const sortedFruits = Object.entries(fruitStats)
+        .sort(([, a], [, b]) => b.total - a.total)
         .slice(0, 5);
-    
+
     const chartContainer = document.getElementById('fruitChart');
-    
     if (sortedFruits.length === 0) {
         chartContainer.innerHTML = '<p style="text-align: center; color: #666;">No data available</p>';
         return;
     }
-    
-    chartContainer.innerHTML = sortedFruits.map(([fruit, count]) => `
+
+    chartContainer.innerHTML = sortedFruits.map(([fruit, stat]) => `
         <div class="fruit-item">
             <span><strong>${fruit}</strong></span>
-            <span>${count} boxes</span>
+            <span>${stat.left} left / ${stat.total} boxes</span>
         </div>
     `).join('');
 }
 
 // Update recent activity
+// ...existing code...
 function updateRecentActivity() {
-    const recentRecords = [...records]
-        .sort((a, b) => new Date(b.date) - new Date(a.date))
-        .slice(0, 5);
-    
+    // Merge both records and boxOutRecords, sort by date/time
+    const activities = [
+        ...records.map(r => ({
+            type: 'billing',
+            name: r.name,
+            fruit: r.fruit,
+            quantity: r.quantity,
+            billNumber: r.billNumber,
+            date: r.date,
+            boxesLeft: getBoxesLeft(r.billNumber)
+        })),
+        ...boxOutRecords.map(b => ({
+            type: 'boxout',
+            name: b.name,
+            fruit: (() => {
+                const rec = records.find(r => r.billNumber === b.billNumber);
+                return rec ? rec.fruit : '';
+            })(),
+            quantity: b.boxesOut,
+            billNumber: b.billNumber,
+            date: (() => {
+                // Try to parse as ISO, fallback to string
+                const d = new Date(b.dateTime);
+                return isNaN(d) ? b.dateTime : d.toISOString();
+            })(),
+            boxesLeft: getBoxesLeft(b.billNumber)
+        }))
+    ].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+
     const activityContainer = document.getElementById('recentActivity');
-    
-    if (recentRecords.length === 0) {
+    if (activities.length === 0) {
         activityContainer.innerHTML = '<p style="text-align: center; color: #666;">No recent activity</p>';
         return;
     }
-    
-    activityContainer.innerHTML = recentRecords.map(record => {
-        const overdue = isOverdue(record.date);
-        const activityClass = overdue ? 'activity-overdue' : '';
-        
+
+    activityContainer.innerHTML = activities.map(act => {
+        const label = act.type === 'billing' ? 'New Billing' : 'Box Out';
         return `
-        <div class="activity-item ${activityClass}">
-            <div><strong>${record.name}</strong> - ${record.fruit}</div>
-            <div>₹${Number(record.monthlyCost || 0).toFixed(2)} (${record.quantity} boxes)</div>
-            <div class="activity-time">${new Date(record.date).toLocaleString('en-IN')}</div>
-            ${overdue ? '<div class="overdue-label">OVERDUE</div>' : ''}
+        <div class="activity-item">
+            <div>
+                <strong>${act.name}</strong> - ${act.fruit} 
+                <span style="font-size:0.85em;color:#888;">(${label})</span>
+            </div>
+            <div>
+                ${act.type === 'billing' ? `Total: ${act.quantity} boxes` : `Out: ${act.quantity} boxes`}
+                <span style="margin-left:1em;color:#4a5568;">Left: ${act.boxesLeft}</span>
+            </div>
+            <div class="activity-time">${new Date(act.date).toLocaleString('en-IN')}</div>
         </div>
-    `;
+        `;
     }).join('');
 }
+// ...existing code...
 
 // Show bill preview
 function showBillPreview(record) {
@@ -787,15 +819,22 @@ document.getElementById('boxOutForm').addEventListener('submit', function(e) {
 function displayBoxOutHistory() {
     const tbody = document.getElementById('boxOutHistory');
     if (!tbody) return;
-    tbody.innerHTML = boxOutRecords.slice().reverse().map(b => `
+    tbody.innerHTML = boxOutRecords.slice().reverse().map((b, idx, arr) => {
+        // Calculate the correct index in the original array
+        const realIdx = boxOutRecords.length - 1 - idx;
+        return `
         <tr>
             <td>${b.name}</td>
             <td>${b.billNumber}</td>
             <td>${b.boxesOut}</td>
             <td>${b.dateTime}</td>
             <td>${b.left}</td>
+            <td>
+                <button onclick="deleteBoxOutRecord(${realIdx})" class="action-btn delete-btn">Delete</button>
+            </td>
         </tr>
-    `).join('');
+        `;
+    }).join('');
 }
 
 // Clear Box Out form
@@ -838,3 +877,24 @@ document.addEventListener('keydown', function(e) {
         document.getElementById('appPassword').value = '';
     }
 });
+
+// delete button in box-out history
+function deleteBoxOutRecord(index) {
+    if (confirm('Are you sure you want to delete this box out entry?')) {
+        boxOutRecords.splice(index, 1);
+        localStorage.setItem('boxOutRecords', JSON.stringify(boxOutRecords));
+        displayBoxOutHistory();
+        showNotification('Box out entry deleted!', 'success');
+        updateBoxOutInfo();
+    }
+}
+// for update boxes in popular fruits
+function getBoxesLeft(billNumber) {
+    const record = records.find(r => r.billNumber === billNumber);
+    if (!record) return 0;
+    const totalBoxes = record.quantity;
+    const out = boxOutRecords
+        .filter(b => b.billNumber === billNumber)
+        .reduce((sum, b) => sum + b.boxesOut, 0);
+    return totalBoxes - out;
+}
