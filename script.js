@@ -7,7 +7,7 @@ let billCounter = parseInt(localStorage.getItem('billCounter') || '1');
 let deleteRecordId = null;
 
 // Rate per kg per month
-const RATE_PER_KG_PER_MONTH = 4;
+const RATE_PER_KG_PER_MONTH = document.getElementById('rateDisplay').value;
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', function() {
@@ -64,7 +64,7 @@ function generateBillNumber() {
     const dateStr = today.getFullYear().toString().substr(-2) + 
                    (today.getMonth() + 1).toString().padStart(2, '0') + 
                    today.getDate().toString().padStart(2, '0');
-    const billNum = `JFC${dateStr}${billCounter.toString().padStart(3, '0')}`;
+    const billNum = `JE${dateStr}${billCounter.toString().padStart(3, '0')}`;
     document.getElementById('billNumber').textContent = billNum;
     return billNum;
 }
@@ -73,13 +73,14 @@ function generateBillNumber() {
 function calculateTotal() {
     const quantity = parseFloat(document.getElementById('quantity').value) || 0;
     const weight = parseFloat(document.getElementById('weight').value) || 0;
-    
+    const rate = parseFloat(document.getElementById('rateDisplay').value) || 0; // Get current rate
+
     const totalWeight = quantity * weight;
-    const monthlyCost = totalWeight * RATE_PER_KG_PER_MONTH;
-    
+    const monthlyCost = totalWeight * rate;
+
     document.getElementById('totalWeight').value = totalWeight > 0 ? `${totalWeight.toFixed(1)} kg` : '';
     document.getElementById('total').value = monthlyCost > 0 ? `₹${monthlyCost.toFixed(2)}` : '';
-    
+
     calculateBalance();
 }
 
@@ -133,6 +134,10 @@ document.getElementById('billingForm').addEventListener('submit', function(e) {
     const monthlyCost = totalWeight * RATE_PER_KG_PER_MONTH;
     const paid = parseFloat(document.getElementById('paid').value) || 0;
     const balance = monthlyCost - paid;
+    const payments = [];
+    if (paid > 0) {
+    payments.push({ amount: paid, date: new Date().toISOString() });
+}
     
     const record = {
         id: Date.now().toString(),
@@ -149,6 +154,7 @@ document.getElementById('billingForm').addEventListener('submit', function(e) {
         rate: RATE_PER_KG_PER_MONTH,
         monthlyCost: monthlyCost,
         paid: paid,
+        payments: payments,
         balance: balance,
         notes: document.getElementById('notes').value.trim()
     };
@@ -426,14 +432,33 @@ function updateRecentActivity() {
 
 // Show bill preview
 function showBillPreview(record) {
+    let paymentHistoryHtml = '';
     const modal = document.getElementById('billModal');
     const content = document.getElementById('billContent');
-    
+
+    if (record.payments && record.payments.length > 0) {
+        paymentHistoryHtml = `
+            <h3>Payment History</h3>
+            <table style="width:100%;border-collapse:collapse;margin-bottom:1rem;">
+                <tr style="background:#f8f9fa;">
+                    <th style="padding:0.5rem;border:1px solid #ddd;">Amount (₹)</th>
+                    <th style="padding:0.5rem;border:1px solid #ddd;">Date & Time</th>
+                </tr>
+                ${record.payments.map(p => `
+                    <tr>
+                        <td style="padding:0.5rem;border:1px solid #ddd;">₹${Number(p.amount).toFixed(2)}</td>
+                        <td style="padding:0.5rem;border:1px solid #ddd;">${new Date(p.date).toLocaleString('en-IN')}</td>
+                    </tr>
+                `).join('')}
+            </table>
+        `;
+    }
+
     content.innerHTML = `
         <div class="bill-details">
             <div style="text-align: center; margin-bottom: 2rem;">
-                <h2>🍎 Janta Fruit Chamber</h2>
-                <p>Cold Storage & Fruit Preservation</p>
+                <h1 style="font-family: monospace">🍎 Janta Enterprises</h1>
+                <i><p style="margin-left:15rem;">Cold Storage & Fruit Preservation</p></i>
                 <hr style="margin: 1rem 0;">
             </div>
             
@@ -456,8 +481,8 @@ function showBillPreview(record) {
             <table style="width: 100%; border-collapse: collapse; margin-bottom: 2rem;">
                 <tr style="background: #f8f9fa;">
                     <th style="padding: 0.5rem; border: 1px solid #ddd;">Fruit</th>
-                    <th style="padding: 0.5rem; border: 1px solid #ddd;">Weight/Box</th>
-                    <th style="padding: 0.5rem; border: 1px solid #ddd;">Quantity</th>
+                    <th style="padding: 0.5rem; border: 1px solid #ddd;">Box Weight</th>
+                    <th style="padding: 0.5rem; border: 1px solid #ddd;">Box Quantity</th>
                     <th style="padding: 0.5rem; border: 1px solid #ddd;">Total Weight</th>
                     <th style="padding: 0.5rem; border: 1px solid #ddd;">Rate</th>
                     <th style="padding: 0.5rem; border: 1px solid #ddd;">Monthly Cost</th>
@@ -478,6 +503,7 @@ function showBillPreview(record) {
                     <p><strong>Monthly Cost:</strong> ₹${Number(record.monthlyCost || 0).toFixed(2)}</p>
                     <p><strong>Amount Paid:</strong> ₹${Number(record.paid || 0).toFixed(2)}</p>
                     <p style="color: ${Number(record.balance || 0) > 0 ? '#e53e3e' : '#38a169'};"><strong>Balance:</strong> ₹${Number(record.balance || 0).toFixed(2)}</p>
+                    ${paymentHistoryHtml}
                 </div>
                 <div>
                     <h3>Additional Notes</h3>
@@ -486,7 +512,7 @@ function showBillPreview(record) {
             </div>
             
             <div style="text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd;">
-                <p style="font-size: 0.9rem; color: #666;">Thank you for choosing Janta Fruit Chamber!</p>
+                <p style="font-size: 0.9rem; text-align:center;color: #666;">Thank you for choosing Janta Enterprises!</p>
                 <p style="font-size: 0.8rem; color: #666;">Rate: ₹4 per kg per month</p>
             </div>
         </div>
@@ -494,7 +520,6 @@ function showBillPreview(record) {
     
     modal.style.display = 'block';
 }
-
 // View existing bill
 function viewBill(recordId) {
     const record = records.find(r => r.id === recordId);
@@ -509,9 +534,45 @@ function closeBillModal() {
 }
 
 // Print bill
+// ...existing code...
 function printBill() {
-    window.print();
+    const billContentElem = document.getElementById('billContent');
+    if (!billContentElem || !billContentElem.innerHTML.trim()) {
+        alert('No bill to print!');
+        return;
+    }
+    const billContent = billContentElem.innerHTML;
+    const printWindow = window.open('', '', 'width=800,height=600');
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>Print Bill</title>
+            <link rel="stylesheet" href="styles.css">
+            <style>
+                body { font-family: 'Roboto', Arial, sans-serif; margin: 0; padding: 2rem; background: #fff; }
+                .bill-preview { max-width: 700px; margin: auto; }
+                @media print {
+                    body { background: #fff !important; }
+                    .bill-preview { box-shadow: none !important; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="bill-preview">
+                ${billContent}
+            </div>
+            <script>
+                window.onload = function() {
+                    window.print();
+                    window.onafterprint = function() { window.close(); }
+                }
+            <\/script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
 }
+// ...existing code...
 
 // Show delete confirmation modal
 function showDeleteModal(recordId) {
@@ -709,20 +770,26 @@ function closeEditModal() {
 // Handle edit form submit
 document.getElementById('editForm').addEventListener('submit', function(e) {
     e.preventDefault();
-    if (!editRecordId) return;
-    const paid = parseFloat(document.getElementById('editPaid').value) || 0;
-    const notes = document.getElementById('editNotes').value.trim();
-    const idx = records.findIndex(r => r.id === editRecordId);
-    if (idx !== -1) {
-        records[idx].paid = paid;
-        records[idx].balance = (records[idx].monthlyCost || 0) - paid;
-        records[idx].notes = notes;
-        localStorage.setItem('fruitChamberRecords', JSON.stringify(records));
-        displayRecords();
-        updateAllStats();
-        updateDashboard();
-        showNotification('Record updated successfully!', 'success');
-        closeEditModal();
+      if (editRecordId) {
+        const record = records.find(r => r.id === editRecordId);
+        if (record) {
+            const newPaid = parseFloat(document.getElementById('editPaid').value) || 0;
+            const paidDiff = newPaid - (parseFloat(record.paid) || 0);
+            if (paidDiff > 0) {
+                // Add new payment entry
+                if (!record.payments) record.payments = [];
+                record.payments.push({ amount: paidDiff, date: new Date().toISOString() });
+            }
+            record.paid = newPaid;
+            record.balance = (parseFloat(record.monthlyCost) || 0) - newPaid;
+            record.notes = document.getElementById('editNotes').value.trim();
+            localStorage.setItem('fruitChamberRecords', JSON.stringify(records));
+            updateAllStats();
+            displayRecords();
+            updateDashboard();
+            closeEditModal();
+            showNotification('Payment updated!', 'success');
+        }
     }
 });
 

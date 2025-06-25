@@ -26,7 +26,7 @@
   <!-- Navigation -->
   <nav class="navbar">
     <div class="nav-container">
-      <h1 class="nav-title">🍎 Janta Fruit Chamber</h1>
+      <h1 class="nav-title">🍎 Janta Enterprises</h1>
       <div class="nav-buttons">
         <button class="nav-btn active" onclick="showSection('billing')">New Billing</button>
         
@@ -41,7 +41,7 @@
   <div id="billing-section" class="section active">
     <div class="container">
       <div class="form-header">
-        <h2>Janta Fruit Chamber Billing</h2>
+        <h2>Janta Enterprises Billing</h2>
         <div class="bill-number">Bill No: <span id="billNumber"></span></div>
       </div>
       
@@ -105,10 +105,12 @@
             <input type="text" id="totalWeight" readonly>
           </div>
 
-          <div class="personalinfoname">
-            <label>Monthly Rate (₹4/kg)</label>
-            <input type="text" id="rateDisplay" value="₹4 per kg per month" readonly>
-          </div>
+          <!-- ...existing code... -->
+<div class="personalinfoname">
+    <label>Monthly Rate (₹/kg)</label>
+    <input type="number" id="rateDisplay" value="4" step="0.01" min="0" oninput="calculateTotal()">
+</div>
+<!-- ...existing code... -->
         </div>
 
         <div class="personalinfo">
